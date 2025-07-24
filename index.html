@@ -1,0 +1,2133 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vinna own this study desk!</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- jsPDF CDN for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            color: #374151; /* Dark gray text */
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        .section-card {
+            background-color: #ffffff;
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .flashcard {
+            background-color: #f9fafb; /* Lightest gray */
+            border: 1px solid #e5e7eb; /* Gray border */
+            border-radius: 0.75rem;
+            padding: 2rem;
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out;
+            font-size: 1.5rem;
+            font-weight: 600;
+            user-select: none; /* Prevent text selection on flip */
+        }
+        .flashcard:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .flashcard-flipped {
+            background-color: #eff6ff; /* Light blue */
+            border-color: #bfdbfe; /* Blue border */
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            cursor: pointer;
+        }
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+        .btn-primary {
+            background-color: #3b82f6; /* Blue */
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #2563eb; /* Darker Blue */
+        }
+        .btn-success {
+            background-color: #10b981; /* Green */
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: #059669; /* Darker Green */
+        }
+        .btn-warning {
+            background-color: #f59e0b; /* Yellow */
+            color: white;
+        }
+        .btn-warning:hover {
+            background-color: #d97706; /* Darker Yellow */
+        }
+        .btn-danger {
+            background-color: #ef4444; /* Red */
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626; /* Darker Red */
+        }
+        .btn-secondary {
+            background-color: #6b7280; /* Gray */
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #4b5563; /* Darker Gray */
+        }
+        .toggle-btn {
+            background-color: #e5e7eb;
+            color: #4b5563;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .toggle-btn.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+        textarea, input[type="text"], input[type="file"], select {
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            width: 100%;
+            font-size: 1rem;
+            background-color: #f9fafb;
+        }
+        textarea:focus, input[type="text"]:focus, select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        .video-thumbnail {
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out;
+        }
+        .video-thumbnail:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .note-item, .flashcard-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .note-item:hover, .flashcard-item:hover {
+            background-color: #f3f4f6;
+        }
+        .note-item:last-child, .flashcard-item:last-child {
+            border-bottom: none;
+        }
+        /* Custom modal styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border-radius: 0.75rem;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            position: relative;
+        }
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Chat specific styles */
+        #chatContainer {
+            display: flex;
+            flex-direction: column;
+            height: 400px;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+        #chatMessages {
+            flex-grow: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            background-color: #f9fafb;
+        }
+        .chat-message {
+            margin-bottom: 0.75rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            max-width: 80%;
+        }
+        .chat-message.user {
+            background-color: #dbeafe; /* Light blue */
+            align-self: flex-end;
+            margin-left: auto;
+        }
+        .chat-message.ai {
+            background-color: #e5e7eb; /* Light gray */
+            align-self: flex-start;
+            margin-right: auto;
+        }
+        #chatInputContainer {
+            display: flex;
+            padding: 1rem;
+            border-top: 1px solid #e5e7eb;
+            background-color: #ffffff;
+        }
+        #chatInput {
+            flex-grow: 1;
+            margin-right: 0.5rem;
+        }
+        .loading-indicator {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(0,0,0,.3);
+            border-radius: 50%;
+            border-top-color: #3b82f6;
+            animation: spin 1s ease-in-out infinite;
+            -webkit-animation: spin 1s ease-in-out infinite;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { -webkit-transform: rotate(360deg); }
+        }
+        @-webkit-keyframes spin {
+            to { -webkit-transform: rotate(360deg); }
+        }
+
+        /* Mind Map specific styles (simplified for external link) */
+        #mindMapSection .content {
+            text-align: center;
+            padding: 2rem;
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+        }
+        /* Rich Text Editor styles */
+        .rich-text-editor {
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            min-height: 200px;
+            background-color: #f9fafb;
+            overflow-y: auto;
+            word-wrap: break-word;
+        }
+        .rich-text-editor:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        .editor-toolbar button {
+            background-color: #e5e7eb;
+            color: #4b5563;
+            padding: 0.4rem 0.8rem;
+            border-radius: 0.3rem;
+            font-weight: 500;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .editor-toolbar button:hover {
+            background-color: #d1d5db;
+        }
+        .editor-toolbar button.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+    <div class="container">
+        <h1 class="text-4xl font-bold text-center my-8 text-blue-700">Vinna own this study desk!</h1>
+
+        <!-- Initial Setup / Folder Selection Page -->
+        <section id="initialSetupSection" class="section-card hidden">
+            <h2 class="text-2xl font-semibold mb-4 text-blue-600 text-center">Pilih atau Buat Folder Belajar</h2>
+            <div class="text-center p-6 bg-blue-50 rounded-lg mb-6">
+                <p class="text-lg font-medium text-blue-800 mb-4">Selamat datang di Aplikasi Belajar Pribadi Anda!</p>
+                <p class="text-blue-700 mb-6">Untuk memulai, silakan pilih folder yang sudah ada atau buat folder baru untuk mengelompokkan materi belajar Anda (misalnya: "Matematika", "Sejarah", "Pemrograman").</p>
+
+                <div id="joinHistoryDisplay" class="mb-4 text-sm text-gray-600">
+                    <!-- Join history will be displayed here -->
+                </div>
+
+                <div class="mb-4">
+                    <label for="initialFolderSelect" class="block text-sm font-medium text-gray-700 mb-1">Pilih Folder yang Ada:</label>
+                    <select id="initialFolderSelect" class="w-full mb-2">
+                        <!-- Existing folders will be loaded here -->
+                    </select>
+                </div>
+
+                <div class="mb-6">
+                    <label for="initialNewFolderName" class="block text-sm font-medium text-gray-700 mb-1">Atau Buat Folder Baru:</label>
+                    <input type="text" id="initialNewFolderName" placeholder="Nama Folder Baru" class="mb-2">
+                    <button id="initialAddFolderBtn" class="btn btn-primary w-full">Buat Folder Baru</button>
+                </div>
+
+                <button id="enterMainAppBtn" class="btn btn-primary text-lg px-6 py-3" disabled>Masuk ke Folder</button>
+            </div>
+        </section>
+
+        <!-- Main Application Content -->
+        <div id="mainAppContent" class="hidden">
+            <!-- Section Toggles -->
+            <div class="mb-6 flex flex-wrap justify-center">
+                <button id="toggleFlashcards" class="toggle-btn active">Flashcard Interaktif</button>
+                <button id="toggleVideos" class="toggle-btn active">Video Belajar</button>
+                <button id="toggleNotes" class="toggle-btn active">Editor Catatan</button>
+                <button id="toggleMindMap" class="toggle-btn active">Mind Map</button> <!-- New toggle button -->
+                <button id="toggleFolders" class="toggle-btn active">Folder & Arsip</button>
+                <button id="toggleGeminiChat" class="toggle-btn active">Chat Gemini</button>
+            </div>
+
+            <p class="text-center text-lg font-semibold mb-6 text-gray-700">Folder Aktif: <span id="activeFolderDisplay" class="text-blue-600"></span></p>
+
+            <!-- Flashcard Interaktif Section -->
+            <section id="flashcardsSection" class="section-card">
+                <h2 class="text-2xl font-semibold mb-4 text-blue-600">Flashcard Interaktif</h2>
+                <div class="flex flex-col md:flex-row gap-4 mb-4">
+                    <input type="file" id="flashcardImportFile" accept=".json,.csv" class="flex-grow">
+                    <button id="importFlashcardsBtn" class="btn btn-primary">Import Flashcard (CSV/JSON)</button>
+                </div>
+                <div class="flex flex-col md:flex-row gap-4 mb-4">
+                    <input type="text" id="newFlashcardQuestion" placeholder="Pertanyaan Flashcard Baru" class="flex-grow">
+                    <input type="text" id="newFlashcardAnswer" placeholder="Jawaban Flashcard Baru" class="flex-grow">
+                    <button id="addFlashcardBtn" class="btn btn-primary">Tambah Flashcard</button>
+                </div>
+
+                <div class="mt-6 p-4 border border-blue-200 bg-blue-50 rounded-lg">
+                    <h3 class="text-xl font-semibold mb-3 text-blue-700">✨ Buat Flashcard Otomatis dari Teks</h3>
+                    <textarea id="textToFlashcardInput" rows="6" class="w-full mb-3" placeholder="Tempel teks di sini untuk membuat flashcard otomatis..."></textarea>
+                    <button id="generateFlashcardsBtn" class="btn btn-primary w-full">Buat Flashcard</button>
+                    <div id="flashcardGeneratorLoading" class="hidden text-center mt-2 text-blue-600">
+                        Membuat flashcard... <span class="loading-indicator"></span>
+                    </div>
+                </div>
+
+                <div class="flex justify-center mb-6 mt-6">
+                    <button id="startFlashcardSession" class="btn btn-primary text-xl px-8 py-4">Mulai Sesi Belajar</button>
+                </div>
+
+                <div id="flashcardDisplay" class="hidden">
+                    <p class="text-center text-gray-600 mb-2">Klik kartu untuk melihat jawaban</p>
+                    <div id="currentFlashcard" class="flashcard mb-6"></div>
+                    <div class="flex justify-center gap-4">
+                        <button id="markHafal" class="btn btn-success">Hafal (Hijau)</button>
+                        <button id="markRaguRagu" class="btn btn-warning">Ragu-ragu (Oranye)</button>
+                        <button id="markTidakHafal" class="btn btn-danger">Tidak Hafal (Merah)</button>
+                        <button id="stopFlashcardSessionBtn" class="btn btn-secondary">Stop Sesi</button>
+                    </div>
+                    <p id="flashcardProgress" class="text-center text-gray-600 mt-4"></p>
+                </div>
+
+                <div id="flashcardListContainer" class="mt-8 border border-gray-200 rounded-xl p-4">
+                    <h3 class="text-xl font-semibold mb-3 text-blue-500">Daftar Flashcard di Folder Aktif</h3>
+                    <div id="flashcardsList" class="divide-y divide-gray-200">
+                        <!-- Flashcards will be listed here -->
+                    </div>
+                </div>
+
+                <div id="flashcardHistoryContainer" class="mt-8 border border-gray-200 rounded-xl p-4">
+                    <h3 class="text-xl font-semibold mb-3 text-blue-500">Riwayat Sesi Flashcard</h3>
+                    <div id="flashcardHistoryList" class="divide-y divide-gray-200">
+                        <p class="text-center text-gray-500 py-4">Tidak ada riwayat sesi.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Video Belajar + Catatan Section -->
+            <section id="videosSection" class="section-card">
+                <h2 class="text-2xl font-semibold mb-4 text-blue-600">Video Belajar + Catatan</h2>
+                <div class="mb-4 flex flex-col md:flex-row gap-4">
+                    <input type="text" id="youtubeVideoUrlInput" placeholder="Tempel link YouTube di sini (mis: https://www.youtube.com/watch?v=...)">
+                    <button id="addYoutubeVideoBtn" class="btn btn-primary">Tambah Video YouTube</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6" id="videoList">
+                    <!-- Videos will be listed here -->
+                </div>
+
+                <div id="videoPlayerContainer" class="hidden">
+                    <h3 class="text-xl font-semibold mb-3 text-blue-500" id="currentVideoTitle"></h3>
+                    <div class="relative w-full aspect-video bg-gray-200 rounded-lg overflow-hidden mb-4">
+                        <iframe id="youtubePlayer" class="absolute top-0 left-0 w-full h-full" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+                    <h4 class="text-lg font-semibold mb-2 text-blue-500">Catatan Video</h4>
+                    <textarea id="videoNotesArea" rows="6" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 mb-3" placeholder="Tulis catatan Anda di sini..."></textarea>
+                    <div class="mb-4">
+                        <label for="videoAttachmentInput" class="block text-sm font-medium text-gray-700 mb-1">Lampirkan File (Docs/PDF/Gambar):</label>
+                        <input type="file" id="videoAttachmentInput" class="w-full mb-2" accept=".doc,.docx,.pdf,.jpg,.jpeg,.png,.gif">
+                        <div id="videoAttachedFilesList" class="text-sm text-gray-60">
+                            <!-- Attached files for video will be listed here -->
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="saveVideoNotesBtn" class="btn btn-primary">Simpan Catatan Video</button>
+                        <button id="exportVideoNotesWordBtn" class="btn btn-secondary">Ekspor ke Word</button>
+                        <button id="exportVideoNotesPdfBtn" class="btn btn-secondary">Ekspor ke PDF</button>
+                        <button id="closeVideoPlayerBtn" class="btn btn-secondary ml-auto">Tutup Pemutar</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Editor Catatan Pribadi Section -->
+            <section id="notesSection" class="section-card">
+                <h2 class="text-2xl font-semibold mb-4 text-blue-600">Editor Catatan Pribadi</h2>
+                <div class="mb-4">
+                    <label for="noteTitle" class="block text-sm font-medium text-gray-700 mb-1">Judul Catatan:</label>
+                    <input type="text" id="noteTitle" class="mb-2" placeholder="Judul Catatan">
+
+                    <div class="editor-toolbar mb-2">
+                        <button type="button" id="boldBtn"><b>B</b></button>
+                        <button type="button" id="italicBtn"><i>I</i></button>
+                        <!-- Add more formatting buttons as needed -->
+                    </div>
+                    <div id="noteContent" class="rich-text-editor" contenteditable="true" placeholder="Tulis catatan Anda di sini..."></div>
+                </div>
+                <div class="mb-4">
+                    <label for="noteAttachmentInput" class="block text-sm font-medium text-gray-700 mb-1">Lampirkan File (Gambar/Docs/PDF):</label>
+                    <input type="file" id="noteAttachmentInput" class="w-full mb-2" accept=".doc,.docx,.pdf,.jpg,.jpeg,.png,.gif">
+                    <div id="attachedFilesList" class="text-sm text-gray-600">
+                        <!-- Attached files will be listed here -->
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button id="saveNoteBtn" class="btn btn-primary">Simpan Catatan</button>
+                    <button id="newNoteBtn" class="btn btn-secondary">Catatan Baru</button>
+                    <button id="deleteNoteBtn" class="btn btn-danger hidden">Hapus Catatan</button>
+                    <button id="exportNoteWordBtn" class="btn btn-secondary ml-auto">Ekspor ke Word</button>
+                    <button id="exportNotePdfBtn" class="btn btn-secondary">Ekspor ke PDF</button>
+                </div>
+                <div class="mt-4">
+                    <button id="summarizeNoteBtn" class="btn btn-primary w-full">✨ Ringkas Catatan Ini</button>
+                    <div id="noteSummarizerLoading" class="hidden text-center mt-2 text-blue-600">
+                        Meringkas catatan... <span class="loading-indicator"></span>
+                    </div>
+                </div>
+
+
+                <div class="mt-8 border border-gray-200 rounded-xl p-4">
+                    <h3 class="text-xl font-semibold mb-3 text-blue-500">Daftar Catatan di Folder Aktif</h3>
+                    <div id="notesList" class="divide-y divide-gray-200">
+                        <!-- Notes will be listed here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Mind Map Section -->
+            <section id="mindMapSection" class="section-card">
+                <h2 class="text-2xl font-semibold mb-4 text-blue-600">Mind Map (Gaya Buzan)</h2>
+                <div class="content">
+                    <p class="text-lg mb-4">Untuk membuat mind map yang jelas dan profesional dengan gaya Buzan, kami sarankan menggunakan alat khusus.</p>
+                    <a href="https://www.mindmeister.com/" target="_blank" class="btn btn-primary text-lg px-6 py-3">Buka MindMeister (Situs Profesional)</a>
+                    <p class="text-sm text-gray-600 mt-4">MindMeister adalah alat mind mapping online yang populer dan fleksibel, memungkinkan Anda untuk membuat peta pikiran sesuai prinsip Buzan.</p>
+                </div>
+            </section>
+
+
+            <!-- Folder Belajar & Arsip Section -->
+            <section id="foldersSection" class="section-card">
+                <h2 class="text-2xl font-semibold mb-4 text-blue-600">Folder Belajar & Arsip</h2>
+                <div class="mb-4">
+                    <label for="newFolderName" class="block text-sm font-medium text-gray-700 mb-1">Nama Folder Baru:</label>
+                    <input type="text" id="newFolderName" placeholder="Nama Folder Baru" class="mb-2">
+                    <button id="addFolderBtn" class="btn btn-primary">Tambah Folder</button>
+                </div>
+
+                <div class="mt-8 border border-gray-200 rounded-xl p-4">
+                    <h3 class="text-xl font-semibold mb-3 text-blue-500">Daftar Folder</h3>
+                    <div id="folderList" class="divide-y divide-gray-200">
+                        <!-- Folders will be listed here -->
+                    </div>
+                </div>
+
+                <div class="mt-8 border border-gray-200 rounded-xl p-4">
+                    <h3 class="text-xl font-semibold mb-3 text-blue-500">Arsip</h3>
+                    <p class="text-gray-600 mb-4">Item yang diarsipkan tidak akan muncul di daftar utama.</p>
+                    <div id="archiveList" class="divide-y divide-gray-200">
+                        <!-- Archived items will be listed here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chat Gemini Section -->
+            <section id="geminiChatSection" class="section-card">
+                <h2 class="text-2xl font-semibold mb-4 text-blue-600">Chat dengan Gemini AI</h2>
+                <div id="chatContainer">
+                    <div id="chatMessages" class="flex flex-col">
+                        <!-- Chat messages will appear here -->
+                        <div class="chat-message ai">Halo! Saya Gemini AI. Ada yang bisa saya bantu?</div>
+                    </div>
+                    <div id="chatInputContainer">
+                        <input type="text" id="chatInput" placeholder="Ketik pertanyaan Anda..." class="rounded-lg">
+                        <button id="sendChatBtn" class="btn btn-primary">Kirim</button>
+                    </div>
+                </div>
+            </section>
+
+        </div> <!-- End of mainAppContent -->
+
+    </div>
+
+    <!-- Custom Confirmation Modal -->
+    <div id="confirmationModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-button" id="closeModalBtn">&times;</span>
+            <h3 class="text-xl font-semibold mb-4" id="modalTitle">Konfirmasi</h3>
+            <p id="modalMessage" class="mb-6">Apakah Anda yakin ingin melakukan tindakan ini?</p>
+            <div class="flex justify-end gap-3">
+                <button id="modalCancelBtn" class="btn btn-secondary">Batal</button>
+                <button id="modalConfirmBtn" class="btn btn-danger">Ya, Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Display Modal -->
+    <div id="summaryModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-button" id="closeSummaryModalBtn">&times;</span>
+            <h3 class="text-xl font-semibold mb-4">Ringkasan Catatan ✨</h3>
+            <div id="summaryContent" class="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200 max-h-80 overflow-y-auto"></div>
+            <div class="flex justify-end">
+                <button id="copySummaryBtn" class="btn btn-primary">Salin Ringkasan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Attachment Info Modal -->
+    <div id="fileInfoModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-button" id="closeFileInfoModalBtn">&times;</span>
+            <h3 class="text-xl font-semibold mb-4">Informasi Lampiran File</h3>
+            <p class="mb-4">
+                **Penting:** Aplikasi ini berjalan di browser Anda (sisi klien). Ini berarti **konten file yang Anda lampirkan TIDAK disimpan** di aplikasi ini atau di cloud. Hanya nama dan jenis file yang dicatat sebagai referensi.
+            </p>
+            <p class="mb-6">
+                Untuk menyimpan file Anda secara permanen dan dapat diakses dari mana saja, Anda memerlukan solusi penyimpanan cloud terpisah (misalnya, Google Drive, Dropbox, atau Firebase Storage jika aplikasi memiliki backend).
+            </p>
+            <p class="text-gray-700">Pastikan Anda menyimpan salinan asli file Anda di lokasi yang aman.</p>
+            <div class="flex justify-end mt-4">
+                <button id="fileInfoModalOkBtn" class="btn btn-primary">Oke, Mengerti</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // Global data storage
+        let flashcards = [];
+        let notes = [];
+        let videos = []; // Default videos are now empty as per user request to remove them
+        let folders = []; // Will be initialized with 'Umum' and 'Arsip'
+        let sectionsVisibility = {
+            flashcardsSection: true,
+            videosSection: true,
+            notesSection: true,
+            mindMapSection: true, // New section visibility
+            foldersSection: true,
+            geminiChatSection: true, // New section
+        };
+        let currentFlashcardIndex = 0;
+        let currentFlashcardQueue = []; // For session management
+        let isFlashcardFlipped = false;
+        let currentEditingNoteId = null; // To track which note is being edited
+        let currentVideoId = null; // To track which video is currently playing
+        let hasEnteredMainApp = false; // Flag for initial setup
+        let activeFolder = 'Umum'; // Stores the currently selected folder
+        let flashcardSessionHistory = []; // New: To store history of flashcard sessions
+        let currentSession = null; // New: To track the active flashcard session
+        let joinDate = null; // New: To store the user's join date
+
+        // DOM Elements
+        const initialSetupSection = document.getElementById('initialSetupSection');
+        const mainAppContent = document.getElementById('mainAppContent');
+        const initialFolderSelect = document.getElementById('initialFolderSelect');
+        const initialNewFolderNameInput = document.getElementById('initialNewFolderName');
+        const initialAddFolderBtn = document.getElementById('initialAddFolderBtn');
+        const enterMainAppBtn = document.getElementById('enterMainAppBtn');
+        const activeFolderDisplay = document.getElementById('activeFolderDisplay');
+        const joinHistoryDisplay = document.getElementById('joinHistoryDisplay'); // New element
+
+        const flashcardsSection = document.getElementById('flashcardsSection');
+        const videosSection = document.getElementById('videosSection');
+        const notesSection = document.getElementById('notesSection');
+        const mindMapSection = document.getElementById('mindMapSection'); // New mind map section
+        const foldersSection = document.getElementById('foldersSection');
+        const geminiChatSection = document.getElementById('geminiChatSection'); // New section element
+
+        const toggleFlashcardsBtn = document.getElementById('toggleFlashcards');
+        const toggleVideosBtn = document.getElementById('toggleVideos');
+        const toggleNotesBtn = document.getElementById('toggleNotes');
+        const toggleMindMapBtn = document.getElementById('toggleMindMap'); // New toggle button
+        const toggleFoldersBtn = document.getElementById('toggleFolders');
+        const toggleGeminiChatBtn = document.getElementById('toggleGeminiChat'); // New toggle button
+
+        // Flashcard Elements
+        const flashcardImportFile = document.getElementById('flashcardImportFile');
+        const importFlashcardsBtn = document.getElementById('importFlashcardsBtn');
+        const newFlashcardQuestionInput = document.getElementById('newFlashcardQuestion');
+        const newFlashcardAnswerInput = document.getElementById('newFlashcardAnswer');
+        const addFlashcardBtn = document.getElementById('addFlashcardBtn');
+        const textToFlashcardInput = document.getElementById('textToFlashcardInput'); // New input
+        const generateFlashcardsBtn = document.getElementById('generateFlashcardsBtn'); // New button
+        const flashcardGeneratorLoading = document.getElementById('flashcardGeneratorLoading'); // New loading indicator
+        const startFlashcardSessionBtn = document.getElementById('startFlashcardSession');
+        const flashcardDisplay = document.getElementById('flashcardDisplay');
+        const currentFlashcardDiv = document.getElementById('currentFlashcard');
+        const markHafalBtn = document.getElementById('markHafal');
+        const markRaguRaguBtn = document.getElementById('markRaguRagu'); // New button
+        const markTidakHafalBtn = document.getElementById('markTidakHafal'); // New button
+        const stopFlashcardSessionBtn = document.getElementById('stopFlashcardSessionBtn'); // New button
+        const flashcardProgress = document.getElementById('flashcardProgress');
+        const flashcardsListDiv = document.getElementById('flashcardsList');
+        const flashcardHistoryListDiv = document.getElementById('flashcardHistoryList'); // New element
+
+        // Video Elements
+        const youtubeVideoUrlInput = document.getElementById('youtubeVideoUrlInput'); // New input
+        const addYoutubeVideoBtn = document.getElementById('addYoutubeVideoBtn'); // New button
+        const videoListDiv = document.getElementById('videoList');
+        const videoPlayerContainer = document.getElementById('videoPlayerContainer');
+        const youtubePlayer = document.getElementById('youtubePlayer');
+        const currentVideoTitle = document.getElementById('currentVideoTitle');
+        const videoNotesArea = document.getElementById('videoNotesArea');
+        const videoAttachmentInput = document.getElementById('videoAttachmentInput'); // New element
+        const videoAttachedFilesList = document.getElementById('videoAttachedFilesList'); // New element
+        const saveVideoNotesBtn = document.getElementById('saveVideoNotesBtn');
+        const exportVideoNotesWordBtn = document.getElementById('exportVideoNotesWordBtn'); // New button
+        const exportVideoNotesPdfBtn = document.getElementById('exportVideoNotesPdfBtn'); // New button
+        const closeVideoPlayerBtn = document.getElementById('closeVideoPlayerBtn');
+
+        // Note Elements
+        const noteTitleInput = document.getElementById('noteTitle');
+        const noteContentDiv = document.getElementById('noteContent'); // Changed from textarea to div
+        const boldBtn = document.getElementById('boldBtn'); // New button
+        const italicBtn = document.getElementById('italicBtn'); // New button
+        const noteAttachmentInput = document.getElementById('noteAttachmentInput'); // New input
+        const attachedFilesList = document.getElementById('attachedFilesList'); // New element
+        const noteFolderSelect = document.getElementById('noteFolderSelect');
+        const saveNoteBtn = document.getElementById('saveNoteBtn');
+        const newNoteBtn = document.getElementById('newNoteBtn');
+        const deleteNoteBtn = document.getElementById('deleteNoteBtn');
+        const exportNoteWordBtn = document.getElementById('exportNoteWordBtn'); // Existing button
+        const exportNotePdfBtn = document.getElementById('exportNotePdfBtn'); // New button
+        const summarizeNoteBtn = document.getElementById('summarizeNoteBtn'); // Existing button
+        const noteSummarizerLoading = document.getElementById('noteSummarizerLoading'); // Existing loading indicator
+        const notesListDiv = document.getElementById('notesList');
+
+        // Folder Elements
+        const newFolderNameInput = document.getElementById('newFolderName');
+        const addFolderBtn = document.getElementById('addFolderBtn');
+        const folderListDiv = document.getElementById('folderList');
+        const archiveListDiv = document.getElementById('archiveList');
+
+        // Gemini Chat Elements
+        const chatMessagesDiv = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const sendChatBtn = document.getElementById('sendChatBtn');
+
+        // Modal Elements
+        const confirmationModal = document.getElementById('confirmationModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalCancelBtn = document.getElementById('modalCancelBtn');
+        const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+        let modalCallback = null; // Function to call on confirmation
+
+        const summaryModal = document.getElementById('summaryModal'); // Existing summary modal
+        const closeSummaryModalBtn = document.getElementById('closeSummaryModalBtn'); // Existing summary modal close button
+        const summaryContentDiv = document.getElementById('summaryContent'); // Existing summary content div
+        const copySummaryBtn = document.getElementById('copySummaryBtn'); // Existing copy summary button
+
+        const fileInfoModal = document.getElementById('fileInfoModal'); // New file info modal
+        const closeFileInfoModalBtn = document.getElementById('closeFileInfoModalBtn'); // New file info modal close button
+        const fileInfoModalOkBtn = document.getElementById('fileInfoModalOkBtn'); // New file info modal OK button
+
+
+        // --- Utility Functions ---
+        function generateUniqueId() {
+            return '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function saveData(key, data) {
+            try {
+                localStorage.setItem(key, JSON.stringify(data));
+            } catch (e) {
+                console.error('Error saving to localStorage:', e);
+            }
+        }
+
+        function loadData(key, defaultValue) {
+            try {
+                const data = localStorage.getItem(key);
+                return data ? JSON.parse(data) : defaultValue;
+            } catch (e) {
+                console.error('Error loading from localStorage:', e);
+                return defaultValue;
+            }
+        }
+
+        // Debounce function to limit how often a function is called
+        function debounce(func, delay) {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), delay);
+            };
+        }
+
+        function showModal(title, message, onConfirm, onCancel) {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            confirmationModal.classList.remove('hidden');
+
+            modalConfirmBtn.onclick = () => {
+                confirmationModal.classList.add('hidden');
+                if (onConfirm) onConfirm();
+            };
+
+            modalCancelBtn.onclick = () => {
+                confirmationModal.classList.add('hidden');
+                if (onCancel) onCancel();
+            };
+
+            closeModalBtn.onclick = () => {
+                confirmationModal.classList.add('hidden');
+                if (onCancel) onCancel();
+            };
+        }
+
+        function showFileInfoModal() {
+            fileInfoModal.classList.remove('hidden');
+            closeFileInfoModalBtn.onclick = () => fileInfoModal.classList.add('hidden');
+            fileInfoModalOkBtn.onclick = () => fileInfoModal.classList.add('hidden');
+        }
+
+        // --- Section Visibility ---
+        function toggleSection(sectionId) {
+            if (hasEnteredMainApp) {
+                sectionsVisibility[sectionId] = !sectionsVisibility[sectionId];
+                saveData('sectionsVisibility', sectionsVisibility);
+                renderSectionsVisibility();
+            }
+        }
+
+        function renderSectionsVisibility() {
+            // Define all sections and their toggle buttons
+            const allSections = {
+                flashcardsSection: toggleFlashcardsBtn,
+                videosSection: toggleVideosBtn,
+                notesSection: toggleNotesBtn,
+                mindMapSection: toggleMindMapBtn, // Include new mind map section
+                foldersSection: toggleFoldersBtn,
+                geminiChatSection: toggleGeminiChatBtn
+            };
+
+            if (!hasEnteredMainApp) {
+                // Initial setup mode: only show initialSetupSection
+                initialSetupSection.classList.remove('hidden');
+                mainAppContent.classList.add('hidden');
+            } else {
+                // Main app mode: show mainAppContent and manage individual sections
+                initialSetupSection.classList.add('hidden');
+                mainAppContent.classList.remove('hidden');
+
+                for (const sectionId in allSections) {
+                    const element = document.getElementById(sectionId);
+                    const toggleBtn = allSections[sectionId];
+
+                    if (!element || !toggleBtn) {
+                        console.error(`Error: Element or toggle button not found for section ID: ${sectionId}.`);
+                        continue;
+                    }
+
+                    toggleBtn.classList.remove('hidden'); // Ensure toggle buttons are visible in main app mode
+
+                    if (sectionsVisibility[sectionId]) {
+                        element.classList.remove('hidden');
+                        toggleBtn.classList.add('active');
+                    } else {
+                        element.classList.add('hidden');
+                        toggleBtn.classList.remove('active');
+                    }
+                }
+            }
+        }
+
+        // --- Flashcard Logic ---
+        function renderFlashcardsList() {
+            flashcardsListDiv.innerHTML = '';
+            // Filter flashcards by active folder and not archived
+            const filteredFlashcards = flashcards.filter(card =>
+                card.folder === activeFolder && card.folder !== 'Arsip'
+            );
+
+            if (filteredFlashcards.length === 0) {
+                flashcardsListDiv.innerHTML = '<p class="text-center text-gray-500 py-4">Tidak ada flashcard di folder ini.</p>';
+                return;
+            }
+
+            filteredFlashcards.forEach(card => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'flashcard-item';
+                let statusColorClass = '';
+                if (card.status === 'Hafal') statusColorClass = 'text-green-600';
+                else if (card.status === 'Ragu-ragu') statusColorClass = 'text-yellow-600';
+                else if (card.status === 'Tidak Hafal') statusColorClass = 'text-red-600';
+
+                cardEl.innerHTML = `
+                    <div class="flex-grow">
+                        <p class="font-medium">${card.question}</p>
+                        <p class="text-sm text-gray-500">Status: <span class="${statusColorClass}">${card.status}</span></p>
+                    </div>
+                    <div class="flex gap-2">
+                        <select data-id="${card.id}" class="flashcard-move-folder border border-gray-300 rounded-md p-1 text-sm">
+                            ${folders.filter(f => f !== 'Arsip').map(f => `<option value="${f}" ${card.folder === f ? 'selected' : ''}>${f}</option>`).join('')}
+                            <option value="Arsip" ${card.folder === 'Arsip' ? 'selected' : ''}>Arsip</option>
+                        </select>
+                        <button data-id="${card.id}" class="delete-flashcard-btn text-red-500 hover:text-red-700">X</button>
+                    </div>
+                `;
+                flashcardsListDiv.appendChild(cardEl);
+            });
+
+            document.querySelectorAll('.delete-flashcard-btn').forEach(button => {
+                button.onclick = (e) => {
+                    const idToDelete = e.target.dataset.id;
+                    showModal('Hapus Flashcard', 'Apakah Anda yakin ingin menghapus flashcard ini?', () => {
+                        flashcards = flashcards.filter(card => card.id !== idToDelete);
+                        saveData('flashcards', flashcards);
+                        renderFlashcardsList();
+                        renderArchiveList();
+                    });
+                };
+            });
+
+            document.querySelectorAll('.flashcard-move-folder').forEach(select => {
+                select.onchange = (e) => {
+                    const cardId = e.target.dataset.id;
+                    const newFolder = e.target.value;
+                    const cardIndex = flashcards.findIndex(c => c.id === cardId);
+                    if (cardIndex !== -1) {
+                        flashcards[cardIndex].folder = newFolder;
+                        saveData('flashcards', flashcards);
+                        renderFlashcardsList();
+                        renderArchiveList();
+                    }
+                };
+            });
+        }
+
+        function addFlashcard() {
+            const question = newFlashcardQuestionInput.value.trim();
+            const answer = newFlashcardAnswerInput.value.trim();
+            if (question && answer) {
+                flashcards.push({
+                    id: generateUniqueId(),
+                    question: question,
+                    answer: answer,
+                    status: 'Tidak Hafal', // Default status for new cards
+                    folder: activeFolder // Assign to active folder
+                });
+                saveData('flashcards', flashcards);
+                newFlashcardQuestionInput.value = '';
+                newFlashcardAnswerInput.value = '';
+                renderFlashcardsList();
+            } else {
+                showModal('Peringatan', 'Pertanyaan dan Jawaban Flashcard tidak boleh kosong!');
+            }
+        }
+
+        function startFlashcardSession() {
+            // Filter cards for the active folder, excluding archived ones
+            const relevantCards = flashcards.filter(card => card.folder === activeFolder && card.folder !== 'Arsip');
+
+            if (relevantCards.length === 0) {
+                showModal('Info', 'Tidak ada flashcard di folder aktif ini. Silakan tambahkan flashcard terlebih dahulu.');
+                flashcardDisplay.classList.add('hidden'); // Ensure flashcard display is hidden if no cards
+                return; // Exit function early
+            }
+
+            const hafalCards = relevantCards.filter(card => card.status === 'Hafal');
+            const nonHafalCards = relevantCards.filter(card => card.status !== 'Hafal');
+
+            // Prioritize non-hafal cards, then add hafal cards (if any)
+            currentFlashcardQueue = [...nonHafalCards];
+
+            // Shuffle non-hafal cards
+            for (let i = currentFlashcardQueue.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [currentFlashcardQueue[i], currentFlashcardQueue[j]] = [currentFlashcardQueue[j], currentFlashcardQueue[i]];
+            }
+
+            // Add hafal cards to the end (they won't be repeated)
+            currentFlashcardQueue.push(...hafalCards);
+
+            // Initialize current session data
+            currentSession = {
+                id: generateUniqueId(),
+                startTime: new Date().toISOString(),
+                folder: activeFolder,
+                totalCards: currentFlashcardQueue.length,
+                cardsHafal: 0,
+                cardsRaguRagu: 0,
+                cardsTidakHafal: 0,
+                completedCards: 0,
+                endTime: null
+            };
+
+
+            currentFlashcardIndex = 0;
+            isFlashcardFlipped = false;
+            flashcardDisplay.classList.remove('hidden');
+            displayNextFlashcard();
+        }
+
+        function displayNextFlashcard() {
+            if (currentFlashcardIndex < currentFlashcardQueue.length) {
+                const currentCard = currentFlashcardQueue[currentFlashcardIndex];
+                currentFlashcardDiv.textContent = currentCard.question;
+                currentFlashcardDiv.classList.remove('flashcard-flipped');
+                isFlashcardFlipped = false;
+                updateFlashcardProgress();
+            } else {
+                // Session ends naturally
+                if (currentSession) {
+                    currentSession.endTime = new Date().toISOString();
+                    flashcardSessionHistory.push(currentSession);
+                    saveData('flashcardSessionHistory', flashcardSessionHistory);
+                    currentSession = null; // Clear current session
+                    renderFlashcardSessionHistory(); // Update history display
+                }
+                currentFlashcardDiv.textContent = 'Sesi Selesai! Selamat!';
+                flashcardDisplay.classList.add('hidden');
+                startFlashcardSessionBtn.textContent = 'Mulai Sesi Belajar Lagi';
+                updateFlashcardProgress();
+            }
+        }
+
+        function flipFlashcard() {
+            const currentCard = currentFlashcardQueue[currentFlashcardIndex];
+            if (currentCard) {
+                if (isFlashcardFlipped) {
+                    currentFlashcardDiv.textContent = currentCard.question;
+                    currentFlashcardDiv.classList.remove('flashcard-flipped');
+                } else {
+                    currentFlashcardDiv.textContent = currentCard.answer;
+                    currentFlashcardDiv.classList.add('flashcard-flipped');
+                }
+                isFlashcardFlipped = !isFlashcardFlipped;
+            }
+        }
+
+        function markFlashcard(status) {
+            if (currentFlashcardIndex < currentFlashcardQueue.length) {
+                const currentCard = currentFlashcardQueue[currentFlashcardIndex];
+                const originalCardIndex = flashcards.findIndex(card => card.id === currentCard.id);
+
+                if (originalCardIndex !== -1) {
+                    flashcards[originalCardIndex].status = status;
+                    // Update session stats
+                    if (currentSession) {
+                        currentSession.completedCards++;
+                        if (status === 'Hafal') currentSession.cardsHafal++;
+                        else if (status === 'Ragu-ragu') currentSession.cardsRaguRagu++;
+                        else if (status === 'Tidak Hafal') currentSession.cardsTidakHafal++;
+                    }
+
+                    // If marked "Ragu-ragu" or "Tidak Hafal', add it back to the end of the current session queue
+                    if (status === 'Ragu-ragu' || status === 'Tidak Hafal') {
+                        currentFlashcardQueue.push(currentCard);
+                    }
+                    saveData('flashcards', flashcards);
+                }
+                currentFlashcardIndex++;
+                displayNextFlashcard();
+                renderFlashcardsList(); // Update list to reflect status change
+            }
+        }
+
+        function stopFlashcardSession() {
+            if (currentSession) {
+                currentSession.endTime = new Date().toISOString();
+                flashcardSessionHistory.push(currentSession);
+                saveData('flashcardSessionHistory', flashcardSessionHistory);
+                currentSession = null; // Clear current session
+                renderFlashcardSessionHistory(); // Update history display
+            }
+            currentFlashcardDiv.textContent = 'Sesi Dihentikan.';
+            flashcardDisplay.classList.add('hidden');
+            startFlashcardSessionBtn.textContent = 'Mulai Sesi Belajar';
+            updateFlashcardProgress(); // Update progress to reflect session end
+        }
+
+        function updateFlashcardProgress() {
+            const totalRelevantCards = flashcards.filter(card => card.folder === activeFolder && card.folder !== 'Arsip').length;
+            flashcardProgress.textContent = `Kartu ${currentFlashcardIndex} dari ${currentFlashcardQueue.length} (Total di folder: ${totalRelevantCards})`;
+        }
+
+        function renderFlashcardSessionHistory() {
+            if (!flashcardHistoryListDiv) return; // Null check for the history div
+
+            flashcardHistoryListDiv.innerHTML = '';
+            if (flashcardSessionHistory.length === 0) {
+                flashcardHistoryListDiv.innerHTML = '<p class="text-center text-gray-500 py-4">Tidak ada riwayat sesi.</p>';
+                return;
+            }
+
+            // Sort history by start time, newest first
+            const sortedHistory = [...flashcardSessionHistory].sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+
+            // Find the earliest session date
+            const earliestSession = flashcardSessionHistory.reduce((min, session) => {
+                return (new Date(session.startTime) < new Date(min.startTime)) ? session : min;
+            }, flashcardSessionHistory[0]);
+
+            const earliestDateString = new Date(earliestSession.startTime).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+
+            // Add info about when history started
+            const historyInfoEl = document.createElement('div');
+            historyInfoEl.className = 'text-center text-gray-600 mb-4 pb-2 border-b border-gray-200';
+            historyInfoEl.innerHTML = `<p>Riwayat belajar Anda dimulai sejak <span class="font-semibold text-blue-600">${earliestDateString}</span>.</p>`;
+            flashcardHistoryListDiv.appendChild(historyInfoEl);
+
+
+            sortedHistory.forEach(session => {
+                const sessionEl = document.createElement('div');
+                sessionEl.className = 'py-3 px-4 border-b border-gray-200 last:border-b-0';
+                const startDate = new Date(session.startTime).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+                const endDate = session.endTime ? new Date(session.endTime).toLocaleString('id-ID', { timeStyle: 'short' }) : 'Belum Selesai';
+                const duration = session.endTime ? ((new Date(session.endTime) - new Date(session.startTime)) / 1000 / 60).toFixed(1) + ' menit' : 'Berlangsung';
+
+                sessionEl.innerHTML = `
+                    <p class="font-semibold text-blue-700">Sesi pada ${startDate} - ${endDate}</p>
+                    <p class="text-sm text-gray-700">Folder: ${session.folder}</p>
+                    <p class="text-sm text-green-600">Hafal: ${session.cardsHafal}</p>
+                    <p class="text-sm text-yellow-600">Ragu-ragu: ${session.cardsRaguRagu}</p>
+                    <p class="text-sm text-red-600">Tidak Hafal: ${session.cardsTidakHafal}</p>
+                    <p class="text-sm text-gray-600">Durasi: ${duration}</p>
+                `;
+                flashcardHistoryListDiv.appendChild(sessionEl);
+            });
+        }
+
+
+        async function importFlashcards(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const content = e.target.result;
+                    let importedData = [];
+
+                    if (file.name.endsWith('.json')) {
+                        importedData = JSON.parse(content);
+                        if (!Array.isArray(importedData) || !importedData.every(item => item.question && item.answer)) {
+                            throw new Error('Format JSON tidak valid. Harap gunakan array objek dengan properti "question" dan "answer".');
+                        }
+                    } else if (file.name.endsWith('.csv')) {
+                        // Simple CSV parsing: assumes "question,answer" per line
+                        const lines = content.split('\n').filter(line => line.trim() !== '');
+                        importedData = lines.map(line => {
+                            const parts = line.split(',');
+                            if (parts.length >= 2) {
+                                return { question: parts[0].trim(), answer: parts.slice(1).join(',').trim() };
+                            }
+                            return null; // Skip malformed lines
+                        }).filter(item => item !== null && item.question && item.answer); // Filter out nulls and incomplete items
+
+                        if (importedData.length === 0 && lines.length > 0) {
+                            throw new Error('Format CSV tidak valid atau kosong. Harap gunakan format "pertanyaan,jawaban" per baris.');
+                        }
+                    } else {
+                        throw new Error('Format file tidak didukung. Harap gunakan file JSON atau CSV.');
+                    }
+
+                    // Add unique IDs and default status/folder to imported cards
+                    const newCards = importedData.map(card => ({
+                        id: generateUniqueId(),
+                        question: card.question,
+                        answer: card.answer,
+                        status: 'Tidak Hafal', // Default status for imported cards
+                        folder: activeFolder // Assign to active folder
+                    }));
+
+                    flashcards.push(...newCards);
+                    saveData('flashcards', flashcards);
+                    renderFlashcardsList();
+                    showModal('Info', `${newCards.length} flashcard berhasil diimpor!`);
+                } catch (error) {
+                    showModal('Error', 'Gagal mengimpor flashcard: ' + error.message);
+                    console.error('Import error:', error);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- Gemini API for Flashcard Generation ---
+        async function generateFlashcardsFromText() {
+            const text = textToFlashcardInput.value.trim();
+            if (!text) {
+                showModal('Peringatan', 'Silakan masukkan teks untuk membuat flashcard.');
+                return;
+            }
+
+            flashcardGeneratorLoading.classList.remove('hidden');
+            generateFlashcardsBtn.disabled = true;
+
+            try {
+                const prompt = `Ekstrak konsep-konsep kunci dan definisi atau penjelasannya dari teks berikut dan sajikan sebagai pasangan pertanyaan-jawaban dalam format JSON. Setiap objek harus memiliki properti 'question' dan 'answer'. Pastikan outputnya adalah array JSON dari objek.
+                Teks: ${text}`;
+
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "ARRAY",
+                            items: {
+                                type: "OBJECT",
+                                properties: {
+                                    "question": { "type": "STRING" },
+                                    "answer": { "type": "STRING" }
+                                },
+                                "propertyOrdering": ["question", "answer"]
+                            }
+                        }
+                    }
+                };
+
+                const apiKey = ""; // API Key secara otomatis disediakan oleh lingkungan Canvas.
+                                  // Jangan ubah baris ini.
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const jsonString = result.candidates[0].content.parts[0].text;
+                    const parsedFlashcards = JSON.parse(jsonString);
+
+                    if (Array.isArray(parsedFlashcards) && parsedFlashcards.every(item => item.question && item.answer)) {
+                        const newCards = parsedFlashcards.map(card => ({
+                            id: generateUniqueId(),
+                            question: card.question,
+                            answer: card.answer,
+                            status: 'Tidak Hafal',
+                            folder: activeFolder
+                        }));
+                        flashcards.push(...newCards);
+                        saveData('flashcards', flashcards);
+                        renderFlashcardsList();
+                        textToFlashcardInput.value = ''; // Clear input
+                        showModal('Info', `${newCards.length} flashcard berhasil dibuat dan ditambahkan!`);
+                    } else {
+                        throw new Error('Respons AI tidak dalam format flashcard yang diharapkan.');
+                    }
+                } else {
+                    // Log the full result for debugging if Gemini doesn't respond as expected
+                    console.warn('Gemini API did not return valid candidates or content. Full result:', result);
+                    showModal('Error', 'Gagal membuat flashcard: Tidak ada respons yang valid dari AI. Coba lagi atau periksa koneksi internet Anda.');
+                }
+
+            } catch (error) {
+                showModal('Error', 'Gagal membuat flashcard: ' + error.message);
+                console.error('Gemini Flashcard Generation Error:', error);
+            } finally {
+                flashcardGeneratorLoading.classList.add('hidden');
+                generateFlashcardsBtn.disabled = false;
+            }
+        }
+
+
+        // --- Video Logic ---
+        function renderVideoList() {
+            videoListDiv.innerHTML = '';
+            if (videos.length === 0) {
+                videoListDiv.innerHTML = '<p class="text-center text-gray-500 py-4 col-span-full">Tidak ada video di daftar Anda. Silakan tambahkan link YouTube.</p>';
+                return;
+            }
+            videos.forEach(video => {
+                const videoEl = document.createElement('div');
+                videoEl.className = 'video-thumbnail bg-gray-50 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow';
+                videoEl.innerHTML = `
+                    <h4 class="font-semibold text-lg mb-2">${video.title}</h4>
+                    <div class="relative w-full aspect-video bg-gray-200 rounded-lg overflow-hidden mb-3">
+                        <img src="https://img.youtube.com/vi/${video.id}/hqdefault.jpg" onerror="this.onerror=null;this.src='https://placehold.co/1280x720/E5E7EB/6B7280?text=Video';" alt="${video.title}" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 text-white text-4xl opacity-0 hover:opacity-100 transition-opacity">▶</div>
+                    </div>
+                    <button data-id="${video.id}" class="play-video-btn btn btn-primary w-full">Tonton Video</button>
+                `;
+                videoListDiv.appendChild(videoEl);
+            });
+
+            document.querySelectorAll('.play-video-btn').forEach(button => {
+                button.onclick = (e) => playVideo(e.target.dataset.id);
+            });
+        }
+
+        function extractYouTubeVideoId(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        function addYoutubeVideo() {
+            const url = youtubeVideoUrlInput.value.trim();
+            if (!url) {
+                showModal('Peringatan', 'Link YouTube tidak boleh kosong!');
+                return;
+            }
+
+            const videoId = extractYouTubeVideoId(url);
+            if (!videoId) {
+                showModal('Peringatan', 'Link YouTube tidak valid. Harap masukkan link yang benar.');
+                return;
+            }
+
+            // Check if video already exists to prevent duplicates
+            const existingVideo = videos.find(v => v.id === videoId);
+            if (existingVideo) {
+                showModal('Info', 'Video ini sudah ada dalam daftar Anda.');
+                youtubeVideoUrlInput.value = '';
+                return;
+            }
+
+            // For simplicity, we'll use the video ID as the title for now, or ask the user for a title
+            // A more advanced version might fetch the title from YouTube API
+            const videoTitle = `Video Kustom (${videoId})`; // Placeholder title
+
+            videos.push({
+                id: videoId,
+                title: videoTitle,
+                url: `https://www.youtube.com/embed/${videoId}`,
+                notes: '',
+                attachedFiles: [] // New: Initialize attachedFiles for videos
+            });
+            saveData('videos', videos);
+            renderVideoList();
+            youtubeVideoUrlInput.value = '';
+            showModal('Info', 'Video YouTube berhasil ditambahkan!');
+        }
+
+
+        function playVideo(videoId) {
+            currentVideoId = videoId;
+            const video = videos.find(v => v.id === videoId);
+            if (video) {
+                currentVideoTitle.textContent = video.title;
+                youtubePlayer.src = video.url;
+                videoNotesArea.value = video.notes || '';
+                renderVideoAttachedFiles(video.attachedFiles || []); // Render attached files for video
+                videoPlayerContainer.classList.remove('hidden');
+                videoListDiv.classList.add('hidden'); // Hide video list when player is active
+            }
+        }
+
+        function saveVideoNotes() {
+            if (currentVideoId) {
+                const videoIndex = videos.findIndex(v => v.id === currentVideoId);
+                if (videoIndex !== -1) {
+                    // Update notes
+                    videos[videoIndex].notes = videoNotesArea.value;
+
+                    // Handle new attachments for video
+                    if (videoAttachmentInput.files.length > 0) {
+                        const newFile = videoAttachmentInput.files[0];
+                        const fileExists = videos[videoIndex].attachedFiles.some(f => f.name === newFile.name && f.type === newFile.type);
+                        if (!fileExists) {
+                            videos[videoIndex].attachedFiles.push({ name: newFile.name, type: newFile.type });
+                            showFileInfoModal(); // Inform user about file storage limitation
+                        }
+                        videoAttachmentInput.value = ''; // Clear file input after processing
+                    }
+                    saveData('videos', videos);
+                    renderVideoAttachedFiles(videos[videoIndex].attachedFiles); // Re-render attached files
+                    showModal('Info', 'Catatan video dan lampiran berhasil disimpan!');
+                }
+            }
+        }
+
+        function renderVideoAttachedFiles(files) {
+            videoAttachedFilesList.innerHTML = '';
+            if (files && files.length > 0) {
+                files.forEach(file => {
+                    const fileEl = document.createElement('span');
+                    fileEl.className = 'inline-flex items-center bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full mr-2 mb-2';
+                    fileEl.innerHTML = `
+                        ${file.name}
+                        <button type="button" data-filename="${file.name}" class="remove-video-attached-file-btn inline-flex items-center p-1 ml-2 text-sm text-blue-400 bg-transparent rounded-sm hover:bg-blue-200 hover:text-blue-900">
+                            <svg class="w-2 h-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                            </svg>
+                            <span class="sr-only">Remove file</span>
+                        </button>
+                    `;
+                    videoAttachedFilesList.appendChild(fileEl);
+                });
+
+                document.querySelectorAll('.remove-video-attached-file-btn').forEach(button => {
+                    button.onclick = (e) => {
+                        const filenameToRemove = e.currentTarget.dataset.filename;
+                        if (currentVideoId) {
+                            const videoIndex = videos.findIndex(video => video.id === currentVideoId);
+                            if (videoIndex !== -1) {
+                                videos[videoIndex].attachedFiles = videos[videoIndex].attachedFiles.filter(f => f.name !== filenameToRemove);
+                                saveData('videos', videos);
+                                renderVideoAttachedFiles(videos[videoIndex].attachedFiles); // Re-render
+                            }
+                        }
+                    };
+                });
+            } else {
+                videoAttachedFilesList.textContent = 'Tidak ada file terlampir.';
+            }
+        }
+
+        function exportVideoNotesWord() {
+            if (!currentVideoId) {
+                showModal('Info', 'Pilih video yang sedang diputar untuk mengekspor catatannya.');
+                return;
+            }
+            const video = videos.find(v => v.id === currentVideoId);
+            if (video) {
+                const filename = (video.title || 'Catatan Video Tanpa Judul').replace(/[^a-z0-9]/gi, '_') + '.txt';
+                let content = `Judul Video: ${video.title}\nURL Video: ${video.url}\n\nCatatan:\n${video.notes}`;
+                if (video.attachedFiles && video.attachedFiles.length > 0) {
+                    content += '\n\nFile Terlampir:\n';
+                    video.attachedFiles.forEach(file => {
+                        content += `- ${file.name} (${file.type})\n`;
+                    });
+                }
+                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                link.click();
+                URL.revokeObjectURL(link.href);
+                showModal('Info', 'Catatan video berhasil diekspor sebagai file TXT.');
+            } else {
+                showModal('Info', 'Tidak ada catatan untuk diekspor dari video ini.');
+            }
+        }
+
+        function exportVideoNotesPdf() {
+            if (!currentVideoId) {
+                showModal('Info', 'Pilih video yang sedang diputar untuk mengekspor catatannya ke PDF.');
+                return;
+            }
+            const video = videos.find(v => v.id === currentVideoId);
+            if (video) {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                const title = video.title || 'Catatan Video Tanpa Judul';
+                let content = `URL Video: ${video.url}\n\nCatatan:\n${video.notes}`;
+
+                doc.setFontSize(16);
+                doc.text(title, 10, 10);
+                doc.setFontSize(12);
+                doc.text(content, 10, 20, { maxWidth: 190 }); // Max width for text wrapping
+
+                let yOffset = 20 + (doc.splitTextToSize(content, 190).length * 7); // Adjust yOffset based on content height
+
+                if (video.attachedFiles && video.attachedFiles.length > 0) {
+                    doc.setFontSize(10);
+                    doc.text('File Terlampir:', 10, yOffset + 10);
+                    yOffset += 15;
+                    video.attachedFiles.forEach(file => {
+                        doc.text(`- ${file.name} (${file.type})`, 10, yOffset);
+                        yOffset += 7;
+                    });
+                }
+
+                doc.save(`${title.replace(/[^a-z0-9]/gi, '_')}.pdf`);
+                showModal('Info', 'Catatan video berhasil diekspor sebagai file PDF.');
+            } else {
+                showModal('Info', 'Tidak ada catatan untuk diekspor dari video ini.');
+            }
+        }
+
+
+        function closeVideoPlayer() {
+            youtubePlayer.src = ''; // Stop video playback
+            videoPlayerContainer.classList.add('hidden');
+            videoListDiv.classList.remove('hidden'); // Show video list again
+            currentVideoId = null;
+        }
+
+        // --- Note Editor Logic ---
+        function renderNotesList() {
+            notesListDiv.innerHTML = '';
+            // Filter notes by active folder and not archived
+            const filteredNotes = notes.filter(note =>
+                note.folder === activeFolder && note.folder !== 'Arsip'
+            );
+
+            if (filteredNotes.length === 0) {
+                notesListDiv.innerHTML = '<p class="text-center text-gray-500 py-4">Tidak ada catatan di folder ini.</p>';
+                return;
+            }
+
+            filteredNotes.forEach(note => {
+                const noteEl = document.createElement('div');
+                noteEl.className = 'note-item';
+                noteEl.innerHTML = `
+                    <div class="flex-grow" data-id="${note.id}">
+                        <p class="font-medium">${note.title || 'Catatan Tanpa Judul'}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <select data-id="${note.id}" class="note-move-folder border border-gray-300 rounded-md p-1 text-sm">
+                            ${folders.filter(f => f !== 'Arsip').map(f => `<option value="${f}" ${note.folder === f ? 'selected' : ''}>${f}</option>`).join('')}
+                            <option value="Arsip" ${note.folder === 'Arsip' ? 'selected' : ''}>Arsip</option>
+                        </select>
+                        <button data-id="${note.id}" class="delete-note-btn text-red-500 hover:text-red-700">X</button>
+                    </div>
+                `;
+                notesListDiv.appendChild(noteEl);
+            });
+
+            document.querySelectorAll('.note-item div[data-id]').forEach(div => {
+                div.onclick = (e) => editNote(e.currentTarget.dataset.id);
+            });
+
+            document.querySelectorAll('.delete-note-btn').forEach(button => {
+                button.onclick = (e) => {
+                    e.stopPropagation(); // Prevent parent div click
+                    const idToDelete = e.target.dataset.id;
+                    showModal('Hapus Catatan', 'Apakah Anda yakin ingin menghapus catatan ini?', () => {
+                        notes = notes.filter(note => note.id !== idToDelete);
+                        saveData('notes', notes);
+                        renderNotesList();
+                        renderArchiveList();
+                        newNote(); // Clear editor after deleting
+                    });
+                };
+            });
+
+            document.querySelectorAll('.note-move-folder').forEach(select => {
+                select.onchange = (e) => {
+                    const noteId = e.target.dataset.id;
+                    const newFolder = e.target.value;
+                    const noteIndex = notes.findIndex(n => n.id === noteId);
+                    if (noteIndex !== -1) {
+                        notes[noteIndex].folder = newFolder;
+                        saveData('notes', notes);
+                        renderNotesList();
+                        renderArchiveList();
+                    }
+                };
+            });
+        }
+
+        function newNote() {
+            currentEditingNoteId = null;
+            noteTitleInput.value = '';
+            noteContentDiv.innerHTML = ''; // Use innerHTML for contenteditable
+            noteAttachmentInput.value = ''; // Clear file input
+            attachedFilesList.innerHTML = ''; // Clear attached files display
+            deleteNoteBtn.classList.add('hidden');
+            saveNoteBtn.textContent = 'Simpan Catatan Baru';
+        }
+
+        function saveNote() {
+            const title = noteTitleInput.value.trim();
+            const content = noteContentDiv.innerHTML.trim(); // Use innerHTML for contenteditable
+            const folder = activeFolder; // Notes are saved to the active folder
+
+            if (!title && !content) {
+                showModal('Peringatan', 'Judul atau isi catatan tidak boleh kosong!');
+                return;
+            }
+
+            // Get current attached files from display or initialize if new note
+            let currentAttachedFiles = [];
+            if (currentEditingNoteId) {
+                const existingNote = notes.find(note => note.id === currentEditingNoteId);
+                if (existingNote && existingNote.attachedFiles) {
+                    currentAttachedFiles = existingNote.attachedFiles;
+                }
+            }
+            // Add any newly selected file (if not already added)
+            if (noteAttachmentInput.files.length > 0) {
+                const newFile = noteAttachmentInput.files[0];
+                const fileExists = currentAttachedFiles.some(f => f.name === newFile.name && f.type === newFile.type);
+                if (!fileExists) {
+                    currentAttachedFiles.push({ name: newFile.name, type: newFile.type });
+                    showFileInfoModal(); // Inform user about file storage limitation
+                }
+                noteAttachmentInput.value = ''; // Clear file input after processing
+            }
+
+
+            if (currentEditingNoteId) {
+                // Update existing note
+                const noteIndex = notes.findIndex(note => note.id === currentEditingNoteId);
+                if (noteIndex !== -1) {
+                    notes[noteIndex] = { ...notes[noteIndex], title, content, folder, attachedFiles: currentAttachedFiles };
+                }
+            } else {
+                // Create new note
+                notes.push({
+                    id: generateUniqueId(),
+                    title: title,
+                    content: content,
+                    folder: folder,
+                    attachedFiles: currentAttachedFiles // Save attached files metadata
+                });
+            }
+            saveData('notes', notes);
+            renderNotesList();
+            newNote(); // Clear form after saving
+        }
+
+        function editNote(id) {
+            const note = notes.find(note => note.id === id);
+            if (note) {
+                currentEditingNoteId = id;
+                noteTitleInput.value = note.title;
+                noteContentDiv.innerHTML = note.content; // Use innerHTML for contenteditable
+                renderAttachedFiles(note.attachedFiles || []); // Render attached files
+                deleteNoteBtn.classList.remove('hidden');
+                saveNoteBtn.textContent = 'Perbarui Catatan';
+            }
+        }
+
+        function renderAttachedFiles(files) {
+            attachedFilesList.innerHTML = '';
+            if (files && files.length > 0) {
+                files.forEach(file => {
+                    const fileEl = document.createElement('span');
+                    fileEl.className = 'inline-flex items-center bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full mr-2 mb-2';
+                    fileEl.innerHTML = `
+                        ${file.name}
+                        <button type="button" data-filename="${file.name}" class="remove-attached-file-btn inline-flex items-center p-1 ml-2 text-sm text-blue-400 bg-transparent rounded-sm hover:bg-blue-200 hover:text-blue-900">
+                            <svg class="w-2 h-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                            </svg>
+                            <span class="sr-only">Remove file</span>
+                        </button>
+                    `;
+                    attachedFilesList.appendChild(fileEl);
+                });
+
+                document.querySelectorAll('.remove-attached-file-btn').forEach(button => {
+                    button.onclick = (e) => {
+                        const filenameToRemove = e.currentTarget.dataset.filename;
+                        if (currentEditingNoteId) {
+                            const noteIndex = notes.findIndex(note => note.id === currentEditingNoteId);
+                            if (noteIndex !== -1) {
+                                notes[noteIndex].attachedFiles = notes[noteIndex].attachedFiles.filter(f => f.name !== filenameToRemove);
+                                saveData('notes', notes);
+                                renderAttachedFiles(notes[noteIndex].attachedFiles); // Re-render
+                            }
+                        }
+                    };
+                });
+            } else {
+                attachedFilesList.textContent = 'Tidak ada file terlampir.';
+            }
+        }
+
+        // Basic rich text editor commands
+        function applyFormat(command, value = null) {
+            document.execCommand(command, false, value);
+            noteContentDiv.focus(); // Keep focus on editor
+        }
+
+
+        function deleteNote() {
+            if (currentEditingNoteId) {
+                showModal('Hapus Catatan', 'Apakah Anda yakin ingin menghapus catatan ini secara permanen?', () => {
+                    notes = notes.filter(note => note.id !== currentEditingNoteId);
+                    saveData('notes', notes);
+                    renderNotesList();
+                    renderArchiveList();
+                    newNote(); // Clear editor after deleting
+                });
+            }
+        }
+
+        function exportNoteWord() {
+            if (!currentEditingNoteId) {
+                showModal('Info', 'Pilih catatan yang ingin diekspor terlebih dahulu.');
+                return;
+            }
+            const note = notes.find(n => n.id === currentEditingNoteId);
+            if (note) {
+                const filename = (note.title || 'Catatan Tanpa Judul').replace(/[^a-z0-9]/gi, '_') + '.html'; // Export as HTML to preserve formatting
+                let content = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${note.title || 'Catatan'}</title></head><body><h1>${note.title || 'Catatan Tanpa Judul'}</h1><div>${note.content}</div>`;
+                if (note.attachedFiles && note.attachedFiles.length > 0) {
+                    content += '<h2>File Terlampir:</h2><ul>';
+                    note.attachedFiles.forEach(file => {
+                        content += `<li>${file.name} (${file.type})</li>`;
+                    });
+                    content += '</ul>';
+                }
+                content += '</body></html>';
+
+                const blob = new Blob([content], { type: 'text/html;charset=utf-8' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                link.click();
+                URL.revokeObjectURL(link.href);
+                showModal('Info', 'Catatan berhasil diekspor sebagai file HTML.');
+            }
+        }
+
+        function exportNotePdf() {
+            if (!currentEditingNoteId) {
+                showModal('Info', 'Pilih catatan yang ingin diekspor terlebih dahulu.');
+                return;
+            }
+            const note = notes.find(n => n.id === currentEditingNoteId);
+            if (note) {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                const title = note.title || 'Catatan Tanpa Judul';
+                let content = note.content || ''; // This will be HTML content
+
+                doc.setFontSize(16);
+                doc.text(title, 10, 10);
+                doc.setFontSize(12);
+
+                // For contenteditable HTML, we need to convert it to plain text or use a library that renders HTML to PDF
+                // For simplicity, this will extract plain text from the HTML.
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = content;
+                const plainTextContent = tempDiv.textContent || tempDiv.innerText || '';
+
+                const lines = doc.splitTextToSize(plainTextContent, 190); // Split text to fit page width
+                doc.text(lines, 10, 20);
+
+                let yOffset = 20 + (lines.length * 7); // Adjust yOffset based on content height
+
+                if (note.attachedFiles && note.attachedFiles.length > 0) {
+                    doc.setFontSize(10);
+                    doc.text('File Terlampir:', 10, yOffset + 10);
+                    yOffset += 15;
+                    note.attachedFiles.forEach(file => {
+                        doc.text(`- ${file.name} (${file.type})`, 10, yOffset);
+                        yOffset += 7;
+                    });
+                }
+
+                doc.save(`${title.replace(/[^a-z0-9]/gi, '_')}.pdf`);
+                showModal('Info', 'Catatan berhasil diekspor sebagai file PDF (teks biasa).');
+            }
+        }
+
+
+        // --- Gemini API for Note Summarization ---
+        async function summarizeNote() {
+            const noteContent = noteContentDiv.textContent.trim(); // Use textContent for summarization
+            if (!noteContent) {
+                showModal('Peringatan', 'Catatan tidak boleh kosong untuk diringkas.');
+                return;
+            }
+
+            noteSummarizerLoading.classList.remove('hidden');
+            summarizeNoteBtn.disabled = true;
+
+            try {
+                const prompt = `Ringkas teks berikut secara ringkas.\nTeks: ${noteContent}`;
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = { contents: chatHistory };
+                const apiKey = ""; // API Key secara otomatis disediakan oleh lingkungan Canvas.
+                                  // Jangan ubah baris ini.
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const summary = result.candidates[0].content.parts[0].text;
+                    summaryContentDiv.textContent = summary;
+                    summaryModal.classList.remove('hidden');
+                } else {
+                    // Log the full result for debugging if Gemini doesn't return as expected
+                    console.warn('Gemini API did not return valid candidates or content. Full result:', result);
+                    showModal('Error', 'Gagal meringkas catatan: Tidak ada respons yang valid dari AI. Coba lagi atau periksa koneksi internet Anda.');
+                }
+
+            } catch (error) {
+                showModal('Error', 'Gagal meringkas catatan: ' + error.message);
+                console.error('Gemini Note Summarization Error:', error);
+            } finally {
+                noteSummarizerLoading.classList.add('hidden');
+                summarizeNoteBtn.disabled = false;
+            }
+        }
+
+        // --- Folder & Archive Logic ---
+        function renderFoldersDropdowns() {
+            // Update initial folder select
+            if (initialFolderSelect) { // Add null check
+                initialFolderSelect.innerHTML = '<option value="">Pilih Folder</option>';
+                folders.forEach(folder => {
+                    if (folder !== 'Arsip') {
+                        const option = document.createElement('option');
+                        option.value = folder;
+                        option.textContent = folder;
+                        initialFolderSelect.appendChild(option);
+                    }
+                });
+                initialFolderSelect.value = activeFolder; // Set initial selection
+            }
+        }
+
+        function renderFolderList() {
+            folderListDiv.innerHTML = '';
+            if (folders.length === 0) {
+                folderListDiv.innerHTML = '<p class="text-center text-gray-500 py-4">Tidak ada folder.</p>';
+                return;
+            }
+            folders.forEach(folder => {
+                const folderEl = document.createElement('div');
+                folderEl.className = 'flex justify-between items-center py-2 px-4 border-b border-gray-200 last:border-b-0';
+                folderEl.innerHTML = `
+                    <span class="font-medium">${folder} ${folder === activeFolder ? '<span class="text-blue-500">(Aktif)</span>' : ''}</span>
+                    <div class="flex gap-2">
+                        ${folder !== 'Umum' && folder !== 'Arsip' && folder !== activeFolder ? `<button data-folder="${folder}" class="set-active-folder-btn btn btn-secondary text-sm">Pilih</button>` : ''}
+                        ${folder !== 'Umum' && folder !== 'Arsip' ? `<button data-folder="${folder}" class="delete-folder-btn text-red-500 hover:text-red-700">X</button>` : ''}
+                    </div>
+                `;
+                folderListDiv.appendChild(folderEl);
+            });
+
+            document.querySelectorAll('.delete-folder-btn').forEach(button => {
+                button.onclick = (e) => {
+                    const folderToDelete = e.target.dataset.folder;
+                    showModal('Hapus Folder', `Apakah Anda yakin ingin menghapus folder "${folderToDelete}"? Flashcard dan catatan di folder ini akan dipindahkan ke folder "Umum".`, () => {
+                        folders = folders.filter(f => f !== folderToDelete);
+                        // Move items from deleted folder to 'Umum'
+                        flashcards.forEach(card => {
+                            if (card.folder === folderToDelete) card.folder = 'Umum';
+                        });
+                        notes.forEach(note => {
+                            if (note.folder === folderToDelete) note.folder = 'Umum';
+                        });
+                        saveData('folders', folders);
+                        saveData('flashcards', flashcards);
+                        saveData('notes', notes);
+                        renderFolderList();
+                        renderFoldersDropdowns();
+                        renderFlashcardsList();
+                        renderNotesList();
+                    });
+                };
+            });
+
+            document.querySelectorAll('.set-active-folder-btn').forEach(button => {
+                button.onclick = (e) => {
+                    const folderToSet = e.target.dataset.folder;
+                    setActiveFolder(folderToSet);
+                    showModal('Info', `Folder aktif diubah ke: ${folderToSet}`);
+                };
+            });
+        }
+
+        function addFolder(folderNameInput, isInitialSetup = false) {
+            const newFolderName = folderNameInput.value.trim();
+            if (newFolderName && !folders.includes(newFolderName)) {
+                folders.push(newFolderName);
+                saveData('folders', folders);
+                folderNameInput.value = '';
+                renderFolderList();
+                renderFoldersDropdowns();
+                if (isInitialSetup) {
+                    setActiveFolder(newFolderName);
+                    enterMainAppBtn.disabled = false;
+                }
+            } else if (folders.includes(newFolderName)) {
+                showModal('Peringatan', 'Folder dengan nama ini sudah ada!');
+            } else {
+                showModal('Peringatan', 'Nama folder tidak boleh kosong!');
+            }
+        }
+
+        function setActiveFolder(folderName) {
+            activeFolder = folderName;
+            saveData('activeFolder', activeFolder);
+            if (activeFolderDisplay) { // Add null check
+                activeFolderDisplay.textContent = activeFolder;
+            }
+            renderFlashcardsList();
+            renderNotesList();
+            renderFolderList(); // Update folder list to show active status
+            newNote(); // Reset note editor to show active folder as default
+        }
+
+        function renderArchiveList() {
+            archiveListDiv.innerHTML = '';
+            const archivedItems = [
+                ...flashcards.filter(card => card.folder === 'Arsip').map(card => ({ type: 'flashcard', id: card.id, title: card.question, folder: card.folder })),
+                ...notes.filter(note => note.folder === 'Arsip').map(note => ({ type: 'note', id: note.id, title: note.title || 'Catatan Tanpa Judul', folder: note.folder }))
+            ];
+
+            if (archivedItems.length === 0) {
+                archiveListDiv.innerHTML = '<p class="text-center text-gray-500 py-4">Tidak ada item di arsip.</p>';
+                return;
+            }
+
+            archivedItems.forEach(item => {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'flex justify-between items-center py-2 px-4 border-b border-gray-200 last:border-b-0';
+                itemEl.innerHTML = `
+                    <span class="font-medium">${item.title} (${item.type === 'flashcard' ? 'Flashcard' : 'Catatan'})</span>
+                    <button data-id="${item.id}" data-type="${item.type}" class="unarchive-btn btn btn-secondary text-sm">Kembalikan</button>
+                `;
+                archiveListDiv.appendChild(itemEl);
+            });
+
+            document.querySelectorAll('.unarchive-btn').forEach(button => {
+                button.onclick = (e) => {
+                    const id = e.target.dataset.id;
+                    const type = e.target.dataset.type;
+                    if (type === 'flashcard') {
+                        const cardIndex = flashcards.findIndex(card => card.id === id);
+                        if (cardIndex !== -1) {
+                            flashcards[cardIndex].folder = 'Umum'; // Move back to default folder
+                            saveData('flashcards', flashcards);
+                            renderFlashcardsList();
+                        }
+                    } else if (type === 'note') {
+                        const noteIndex = notes.findIndex(note => note.id === id);
+                        if (noteIndex !== -1) {
+                            notes[noteIndex].folder = 'Umum'; // Move back to default folder
+                            saveData('notes', notes);
+                            renderNotesList();
+                        }
+                    }
+                    renderArchiveList();
+                };
+            });
+        }
+
+        // --- Gemini Chat Logic ---
+        let chatHistory = [];
+        let isSendingMessage = false;
+
+        async function sendChatMessage() {
+            if (isSendingMessage) return;
+
+            const userMessage = chatInput.value.trim();
+            if (!userMessage) return;
+
+            // Add user message to chat history and display
+            chatMessagesDiv.innerHTML += `<div class="chat-message user">${userMessage}</div>`;
+            chatHistory.push({ role: "user", parts: [{ text: userMessage }] });
+            chatInput.value = '';
+            chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight; // Scroll to bottom
+
+            // Add loading indicator
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'chat-message ai flex items-center';
+            loadingDiv.innerHTML = '<span>Mengetik...</span> <span class="loading-indicator"></span>';
+            chatMessagesDiv.appendChild(loadingDiv);
+            chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight; // Scroll to bottom
+
+            isSendingMessage = true;
+            sendChatBtn.disabled = true;
+
+            try {
+                const payload = { contents: chatHistory };
+                const apiKey = ""; // API Key secara otomatis disediakan oleh lingkungan Canvas.
+                                  // Jangan ubah baris ini.
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                // Remove loading indicator
+                chatMessagesDiv.removeChild(loadingDiv);
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const aiText = result.candidates[0].content.parts[0].text;
+                    chatMessagesDiv.innerHTML += `<div class="chat-message ai">${aiText}</div>`;
+                    chatHistory.push({ role: "model", parts: [{ text: aiText }] });
+                } else {
+                    // Log the full result for debugging if Gemini doesn't return as expected
+                    console.warn('Gemini API did not return valid candidates or content. Full result:', result);
+                    chatMessagesDiv.innerHTML += `<div class="chat-message ai text-red-500">Maaf, saya tidak dapat menghasilkan respons. Coba lagi atau periksa koneksi internet Anda.</div>`;
+                }
+            } catch (error) {
+                // Remove loading indicator if still present
+                if (chatMessagesDiv.contains(loadingDiv)) {
+                    chatMessagesDiv.removeChild(loadingDiv);
+                }
+                chatMessagesDiv.innerHTML += `<div class="chat-message ai text-red-500">Terjadi kesalahan: ${error.message}. Coba lagi atau periksa koneksi internet Anda.</div>`;
+                console.error('Error calling Gemini API:', error);
+            } finally {
+                isSendingMessage = false;
+                sendChatBtn.disabled = false;
+                chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight; // Scroll to bottom again
+            }
+        }
+
+
+        // --- Event Listeners ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load data
+            flashcards = loadData('flashcards', []);
+            notes = loadData('notes', []);
+            // Filter out specific videos on load (as per prior user request)
+            videos = loadData('videos', []).filter(video =>
+                video.title !== 'Pengantar HTML' &&
+                video.title !== 'Dasar-dasar CSS' &&
+                video.title !== 'JavaScript untuk Pemula'
+            );
+            // Ensure attachedFiles property exists for existing videos
+            videos.forEach(video => {
+                if (!video.hasOwnProperty('attachedFiles')) {
+                    video.attachedFiles = [];
+                }
+            });
+            saveData('videos', videos); // Save the filtered videos back to localStorage
+
+            const loadedFolders = loadData('folders', null);
+            if (loadedFolders && loadedFolders.length > 0) {
+                // Ensure 'Umum' and 'Arsip' are always present
+                if (!loadedFolders.includes('Umum')) loadedFolders.unshift('Umum');
+                if (!loadedFolders.includes('Arsip')) loadedFolders.push('Arsip');
+                folders = [...new Set(loadedFolders)]; // Remove duplicates
+            } else {
+                folders = ['Umum', 'Arsip']; // Default folders
+                saveData('folders', folders);
+            }
+            sectionsVisibility = loadData('sectionsVisibility', sectionsVisibility);
+            hasEnteredMainApp = loadData('hasEnteredMainApp', false); // Load initial setup status
+            activeFolder = loadData('activeFolder', 'Umum'); // Load active folder
+            flashcardSessionHistory = loadData('flashcardSessionHistory', []); // Load session history
+            joinDate = loadData('joinDate', null); // Load join date
+
+            // If no join date, set it now
+            if (!joinDate) {
+                joinDate = new Date().toISOString();
+                saveData('joinDate', joinDate);
+            }
+            if (joinHistoryDisplay) {
+                const dateOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+                joinHistoryDisplay.textContent = `Anda bergabung pada: ${new Date(joinDate).toLocaleDateString('id-ID', dateOptions)}`;
+            }
+
+
+            // Initial rendering based on hasEnteredMainApp
+            renderSectionsVisibility(); // This function now handles initial setup vs main app view
+
+            // Populate initial folder select dropdown
+            renderFoldersDropdowns();
+
+            // Initial setup page listeners
+            if (initialAddFolderBtn) initialAddFolderBtn.onclick = () => addFolder(initialNewFolderNameInput, true);
+            if (initialFolderSelect) initialFolderSelect.onchange = () => {
+                if (initialFolderSelect.value) {
+                    setActiveFolder(initialFolderSelect.value);
+                    if (enterMainAppBtn) enterMainAppBtn.disabled = false;
+                } else {
+                    if (enterMainAppBtn) enterMainAppBtn.disabled = true;
+                }
+            };
+            if (enterMainAppBtn) enterMainAppBtn.onclick = () => {
+                if (activeFolder) {
+                    hasEnteredMainApp = true;
+                    saveData('hasEnteredMainApp', true);
+                    renderSectionsVisibility(); // Transition to main app view
+                    // Re-render all lists to populate them after entering main app
+                    renderFlashcardsList();
+                    renderVideoList();
+                    renderNotesList();
+                    renderFolderList();
+                    renderArchiveList();
+                    renderFlashcardSessionHistory(); // Render history on app load
+                    newNote(); // Initialize note editor
+                } else {
+                    showModal('Peringatan', 'Silakan pilih atau buat folder terlebih dahulu.');
+                }
+            };
+
+            // Main app content listeners (only attach if elements exist)
+            if (mainAppContent) {
+                if (toggleFlashcardsBtn) toggleFlashcardsBtn.onclick = () => toggleSection('flashcardsSection');
+                if (toggleVideosBtn) toggleVideosBtn.onclick = () => toggleSection('videosSection');
+                if (toggleNotesBtn) toggleNotesBtn.onclick = () => toggleSection('notesSection');
+                if (toggleMindMapBtn) toggleMindMapBtn.onclick = () => toggleSection('mindMapSection'); // New mind map toggle
+                if (toggleFoldersBtn) toggleFoldersBtn.onclick = () => toggleSection('foldersSection');
+                if (toggleGeminiChatBtn) toggleGeminiChatBtn.onclick = () => toggleSection('geminiChatSection');
+
+                // Flashcard Listeners
+                if (addFlashcardBtn) addFlashcardBtn.onclick = addFlashcard;
+                if (startFlashcardSessionBtn) startFlashcardSessionBtn.onclick = startFlashcardSession;
+                if (currentFlashcardDiv) currentFlashcardDiv.onclick = flipFlashcard;
+                if (markHafalBtn) markHafalBtn.onclick = () => markFlashcard('Hafal');
+                if (markRaguRaguBtn) markRaguRaguBtn.onclick = () => markFlashcard('Ragu-ragu');
+                if (markTidakHafalBtn) markTidakHafalBtn.onclick = () => markFlashcard('Tidak Hafal');
+                if (stopFlashcardSessionBtn) stopFlashcardSessionBtn.onclick = stopFlashcardSession; // New stop button listener
+                if (flashcardImportFile) flashcardImportFile.onchange = importFlashcards;
+                if (importFlashcardsBtn) importFlashcardsBtn.onclick = () => flashcardImportFile.click(); // Trigger file input click
+                if (generateFlashcardsBtn) generateFlashcardsBtn.onclick = generateFlashcardsFromText; // New LLM feature
+
+                // Video Listeners
+                if (saveVideoNotesBtn) saveVideoNotesBtn.onclick = saveVideoNotes;
+                if (closeVideoPlayerBtn) closeVideoPlayerBtn.onclick = closeVideoPlayer;
+                if (addYoutubeVideoBtn) addYoutubeVideoBtn.onclick = addYoutubeVideo; // New video add button listener
+                if (exportVideoNotesWordBtn) exportVideoNotesWordBtn.onclick = exportVideoNotesWord; // New export video notes word
+                if (exportVideoNotesPdfBtn) exportVideoNotesPdfBtn.onclick = exportVideoNotesPdf; // New export video notes pdf
+                if (videoAttachmentInput) videoAttachmentInput.onchange = () => {
+                    if (videoAttachmentInput.files.length > 0) {
+                        saveVideoNotes(); // Process attachment when selected
+                    }
+                };
+
+
+                // Note Listeners
+                if (saveNoteBtn) saveNoteBtn.onclick = saveNote;
+                if (newNoteBtn) newNoteBtn.onclick = newNote;
+                if (deleteNoteBtn) deleteNoteBtn.onclick = deleteNote;
+                if (exportNoteWordBtn) exportNoteWordBtn.onclick = exportNoteWord;
+                if (exportNotePdfBtn) exportNotePdfBtn.onclick = exportNotePdf; // New export note pdf
+                if (summarizeNoteBtn) summarizeNoteBtn.onclick = summarizeNote; // New LLM feature
+                if (noteTitleInput) noteTitleInput.oninput = debounce(saveNote, 1000); // Auto-save on input
+                if (noteContentDiv) noteContentDiv.oninput = debounce(saveNote, 1000); // Auto-save on input for contenteditable
+                if (noteAttachmentInput) noteAttachmentInput.onchange = () => {
+                    if (noteAttachmentInput.files.length > 0) {
+                        saveNote(); // Trigger saveNote to process the attachment
+                    }
+                };
+                // Rich text editor buttons
+                if (boldBtn) boldBtn.onclick = () => applyFormat('bold');
+                if (italicBtn) italicBtn.onclick = () => applyFormat('italic');
+
+
+                // Folder Listeners
+                if (addFolderBtn) addFolderBtn.onclick = () => addFolder(newFolderNameInput);
+
+                // Gemini Chat Listeners
+                if (sendChatBtn) sendChatBtn.onclick = sendChatMessage;
+                if (chatInput) chatInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        sendChatMessage();
+                    }
+                });
+
+                // Summary Modal Listeners
+                if (closeSummaryModalBtn) closeSummaryModalBtn.onclick = () => summaryModal.classList.add('hidden');
+                if (copySummaryBtn) copySummaryBtn.onclick = () => {
+                    const textToCopy = summaryContentDiv.textContent;
+                    // Use document.execCommand('copy') for better iframe compatibility
+                    const tempTextArea = document.createElement('textarea');
+                    tempTextArea.value = textToCopy;
+                    document.body.appendChild(tempTextArea);
+                    tempTextArea.select();
+                    try {
+                        document.execCommand('copy');
+                        showModal('Info', 'Ringkasan berhasil disalin ke clipboard!');
+                    } catch (err) {
+                        console.error('Gagal menyalin ringkasan:', err);
+                        showModal('Error', 'Gagal menyalin ringkasan. Silakan salin secara manual.');
+                    }
+                    document.body.removeChild(tempTextArea);
+                };
+
+
+                // Initial rendering of content that depends on folders/notes/flashcards
+                // These are called only if hasEnteredMainApp is true, handled by renderSectionsVisibility
+                if (hasEnteredMainApp) {
+                    if (activeFolderDisplay) activeFolderDisplay.textContent = activeFolder;
+                    renderFlashcardsList();
+                    renderVideoList();
+                    renderNotesList();
+                    renderFolderList();
+                    renderArchiveList();
+                    renderFlashcardSessionHistory(); // Render history on app load
+                    newNote(); // Initialize note editor
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>
